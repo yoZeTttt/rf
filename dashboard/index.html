@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RF ISP — Prediksi Keterlambatan Pembayaran</title>
+  <meta name="description" content="Dashboard prediksi keterlambatan pembayaran pelanggan ISP menggunakan Random Forest." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ═══ ANIMATED BG ═══ -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+
+<!-- ═══ SIDEBAR ═══ -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M4 20L10 12L14 16L18 8L24 20H4Z" fill="url(#g1)" opacity="0.9"/>
+        <path d="M4 20L10 12L14 16L18 8L24 20" stroke="url(#g2)" stroke-width="1.5" fill="none"/>
+        <defs>
+          <linearGradient id="g1" x1="4" y1="20" x2="24" y2="8" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#06b6d4"/>
+            <stop offset="1" stop-color="#6366f1"/>
+          </linearGradient>
+          <linearGradient id="g2" x1="4" y1="20" x2="24" y2="8" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#06b6d4"/>
+            <stop offset="1" stop-color="#a78bfa"/>
+          </linearGradient>
+        </defs>
+      </svg>
+    </div>
+    <div class="brand-text">
+      <span class="brand-title">RF Predictor</span>
+      <span class="brand-sub">ISP Analytics</span>
+    </div>
+    <!-- Toggle Button -->
+    <button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" title="Toggle Sidebar">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="sidebar-steps">
+    <div class="step-label">ALUR KERJA</div>
+    <nav class="sidebar-nav">
+      <a class="nav-item active" data-section="upload" href="#" onclick="navigate('upload',this)">
+        <div class="nav-icon-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        </div>
+        <span class="nav-label">Upload Dataset</span>
+        <span class="nav-num">01</span>
+        <span class="nav-tooltip">Upload Dataset</span>
+      </a>
+      <div class="nav-connector"></div>
+      <a class="nav-item" data-section="train" href="#" onclick="navigate('train',this)">
+        <div class="nav-icon-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        </div>
+        <span class="nav-label">Latih Model</span>
+        <span class="nav-num">02</span>
+        <span class="nav-tooltip">Latih Model</span>
+      </a>
+      <div class="nav-connector"></div>
+      <a class="nav-item" data-section="predict" href="#" onclick="navigate('predict',this)">
+        <div class="nav-icon-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        </div>
+        <span class="nav-label">Prediksi</span>
+        <span class="nav-num">03</span>
+        <span class="nav-tooltip">Prediksi</span>
+      </a>
+      <div class="nav-connector"></div>
+      <a class="nav-item" data-section="result" href="#" onclick="navigate('result',this)">
+        <div class="nav-icon-wrap">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        </div>
+        <span class="nav-label">Hasil &amp; Analisis</span>
+        <span class="nav-num">04</span>
+        <span class="nav-tooltip">Hasil &amp; Analisis</span>
+      </a>
+    </nav>
+  </div>
+
+  <div class="sidebar-meta">
+    <div class="meta-card">
+      <div class="meta-row">
+        <span class="meta-label">Status API</span>
+        <div class="api-pill" id="apiPill">
+          <span class="pulse-dot" id="statusDot"></span>
+          <span id="statusText">Menghubungkan…</span>
+        </div>
+      </div>
+      <div class="meta-row" style="margin-top:10px">
+        <span class="meta-label">Model</span>
+        <span class="meta-value" id="modelBadge">Belum Dilatih</span>
+      </div>
+    </div>
+    <div class="sidebar-info">
+      <p>Random Forest · Supervised Learning</p>
+      <p>PT Sinar Jaya Komunikasi</p>
+    </div>
+  </div>
+  <!-- Resize Handle -->
+  <div class="sidebar-resize" id="sidebarResize" title="Drag untuk resize sidebar"></div>
+</aside>
+
+<!-- ═══ FLOATING SIDEBAR TOGGLE ═══ -->
+<button class="sidebar-float-toggle" id="sidebarFloatToggle" onclick="toggleSidebar()" title="Perbesar / Perkecil Sidebar">
+  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+    <path d="M15 18l-6-6 6-6"/>
+  </svg>
+</button>
+
+<!-- ═══ MAIN ═══ -->
+<main class="main-content">
+
+  <!-- TOPBAR -->
+  <header class="topbar">
+    <div>
+      <h1 class="page-title">Prediksi Keterlambatan Pembayaran <span class="title-accent">ISP</span></h1>
+      <p class="page-sub">Penerapan Algoritma Random Forest · Skripsi Teknik Informatika</p>
+    </div>
+    <div class="topbar-actions">
+      <button class="action-btn" onclick="navigate('result',null)" title="Lihat hasil">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Dashboard
+      </button>
+      <button class="action-btn accent" onclick="downloadResults()" title="Download hasil">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Export CSV
+      </button>
+    </div>
+  </header>
+
+  <!-- ══ SECTION 1: UPLOAD ══ -->
+  <section class="section" id="section-upload">
+    <div class="section-head">
+      <div class="step-tag">Langkah <strong>01</strong></div>
+      <h2>Upload Dataset</h2>
+      <p>Upload file CSV pelanggan ISP. Label <code>latepay_30d</code> dibuat otomatis jika belum ada (<code>1</code> jika <code>telat_bayar_30 &gt; 0</code>)</p>
+    </div>
+
+    <div class="upload-zone glass" id="dropZone">
+      <div class="upload-icon-anim">
+        <svg width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <p class="upload-title">Drag &amp; drop file CSV</p>
+      <p class="upload-hint">atau klik tombol di bawah untuk memilih file</p>
+      <label class="btn btn-primary" for="csvFile">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Pilih File CSV
+      </label>
+      <input type="file" id="csvFile" accept=".csv" style="display:none" />
+      <div class="col-hint">
+        <span class="col-tag">telat_bayar_30</span>
+        <span class="col-tag">freq_keluhan_30</span>
+        <span class="col-tag">masa_langganan</span>
+        <span class="col-tag">avg_latency_30</span>
+        <span class="col-tag">downtime_30</span>
+        <span class="col-tag">loss_pct_30</span>
+        <span class="col-tag">p95_jitter_30</span>
+        <span class="col-tag">paket_speed</span>
+      </div>
+    </div>
+
+    <div class="glass card hidden" id="uploadResult">
+      <div class="card-head">
+        <div class="card-title-row">
+          <span class="icon-badge green">✓</span>
+          <h3>Dataset Berhasil Diupload</h3>
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="navigate('train',null)">Lanjut ke Training →</button>
+      </div>
+      <div class="kpi-grid" id="uploadKpi"></div>
+      <div class="preview-block">
+        <div class="preview-head">
+          <span>Preview Data</span>
+          <span class="preview-badge">5 baris pertama</span>
+        </div>
+        <div class="table-scroll" id="previewTable"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 2: TRAIN ══ -->
+  <section class="section hidden" id="section-train">
+    <div class="section-head">
+      <div class="step-tag">Langkah <strong>02</strong></div>
+      <h2>Latih Model Random Forest</h2>
+      <p>Konfigurasi hyperparameter. Data dibagi otomatis: <strong>80% training</strong> / <strong>20% testing</strong></p>
+    </div>
+
+    <div class="glass card">
+      <h3 class="card-h3">Hyperparameter</h3>
+      <div class="param-grid">
+        <div class="param-item">
+          <label>Jumlah Pohon <em>(n_estimators)</em></label>
+          <div class="input-wrap">
+            <input type="range" id="nEstRange" min="10" max="500" value="100" oninput="document.getElementById('nEstimators').value=this.value" />
+            <input type="number" id="nEstimators" value="100" min="10" max="500" oninput="document.getElementById('nEstRange').value=this.value" />
+          </div>
+        </div>
+        <div class="param-item">
+          <label>Kedalaman Maks <em>(max_depth)</em></label>
+          <div class="input-wrap">
+            <input type="number" id="maxDepth" placeholder="None (unlimited)" min="1" max="50" />
+            <span class="input-hint">Kosongkan = unlimited</span>
+          </div>
+        </div>
+        <div class="param-item">
+          <label>Random State <em>(reproducibility)</em></label>
+          <div class="input-wrap">
+            <input type="number" id="randomState" value="42" />
+          </div>
+        </div>
+      </div>
+      <div class="train-action">
+        <button class="btn btn-train" id="btnTrain" onclick="trainModel()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>
+          Mulai Training
+        </button>
+        <p class="train-note">Menggunakan <code>class_weight="balanced"</code> untuk menangani ketidakseimbangan kelas</p>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="glass card hidden" id="trainingProgress">
+      <div class="prog-header">
+        <span id="progressLabel">Mempersiapkan data…</span>
+        <span id="progressPct">0%</span>
+      </div>
+      <div class="prog-track">
+        <div class="prog-fill" id="progressFill"></div>
+      </div>
+      <div class="prog-steps" id="progSteps"></div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="hidden" id="metricsCard">
+      <div class="metrics-header">
+        <h3>Hasil Evaluasi Model</h3>
+        <button class="btn btn-sm btn-ghost" onclick="navigate('predict',null)">Lanjut ke Prediksi →</button>
+      </div>
+      <div class="kpi-grid" id="metricsKpi"></div>
+
+      <div class="metrics-bottom">
+        <div class="glass card cm-card">
+          <h4>Confusion Matrix</h4>
+          <div class="cm-labels-row">
+            <span></span><span class="cm-axis-label">Prediksi</span>
+          </div>
+          <div class="cm-sub-labels">
+            <span class="cm-axis-label-v">Aktual</span>
+            <div class="cm-inner">
+              <div class="cm-col-heads"><span>Tidak Telat</span><span>Telat</span></div>
+              <div class="cm-grid" id="confusionMatrix"></div>
+            </div>
+          </div>
+        </div>
+        <div class="glass card feat-card">
+          <h4>Feature Importance <span class="feat-sub">Pengaruh tiap fitur terhadap prediksi</span></h4>
+          <canvas id="featureChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Files Download Card -->
+    <div class="glass card" id="modelFilesCard" style="display:none">
+      <div class="model-files-header">
+        <div>
+          <h3 class="card-h3" style="margin-bottom:4px">📦 File Model</h3>
+          <p style="font-size:12px;color:var(--muted)">Download model untuk digunakan ulang atau diperiksa</p>
+        </div>
+        <button class="btn btn-sm btn-ghost" onclick="loadModelInfo()">🔄 Refresh Info</button>
+      </div>
+
+      <div class="model-files-grid">
+        <div class="model-file-card pkl">
+          <div class="mf-icon">📦</div>
+          <div class="mf-info">
+            <span class="mf-name">rf_model.pkl</span>
+            <span class="mf-desc">Model Random Forest · Buka dengan Python pickle</span>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="downloadModel()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download .pkl
+          </button>
+        </div>
+        <div class="model-file-card json">
+          <div class="mf-icon">📊</div>
+          <div class="mf-info">
+            <span class="mf-name">rf_metrics.json</span>
+            <span class="mf-desc">Evaluasi model · Accuracy, Precision, Recall, F1</span>
+          </div>
+          <button class="btn btn-sm btn-ghost" onclick="downloadMetrics()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download .json
+          </button>
+        </div>
+      </div>
+
+      <div class="model-info-box" id="modelInfoBox">
+        <div class="mib-loading">Klik "Refresh Info" untuk melihat detail model</div>
+      </div>
+
+      <div class="pkl-usage">
+        <span class="pkl-usage-label">Cara pakai .pkl di Python:</span>
+        <pre class="pkl-code">import pickle
+model = pickle.load(open('rf_model.pkl', 'rb'))
+proba = model.predict_proba(X)[:, 1]  # probabilitas telat</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 3: PREDICT ══ -->
+  <section class="section hidden" id="section-predict">
+    <div class="section-head">
+      <div class="step-tag">Langkah <strong>03</strong></div>
+      <h2>Jalankan Prediksi</h2>
+      <p>Prediksi probabilitas keterlambatan tiap pelanggan menggunakan model yang sudah dilatih</p>
+    </div>
+
+    <div class="glass card">
+      <h3 class="card-h3">Sumber Data Prediksi</h3>
+      <div class="opt-grid">
+        <div class="opt-card active" id="optExisting" onclick="selectPredictOption('existing')">
+          <div class="opt-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="opt-text">
+            <strong>Dataset yang sudah diupload</strong>
+            <span>Gunakan data dari Langkah 01</span>
+          </div>
+          <div class="opt-check">✓</div>
+        </div>
+        <div class="opt-card" id="optNew" onclick="selectPredictOption('new')">
+          <div class="opt-icon">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="opt-text">
+            <strong>Upload file baru</strong>
+            <span>Prediksi data pelanggan baru</span>
+          </div>
+          <div class="opt-check">✓</div>
+        </div>
+      </div>
+
+      <div id="newFileWrap" class="hidden">
+        <label class="file-drop-sm" for="predictFile">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <span id="predictFileName">Pilih File CSV…</span>
+        </label>
+        <input type="file" id="predictFile" accept=".csv" style="display:none" />
+      </div>
+
+      <button class="btn btn-predict" onclick="runPredict()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        Jalankan Prediksi
+      </button>
+    </div>
+  </section>
+
+  <!-- ══ SECTION 4: RESULTS ══ -->
+  <section class="section hidden" id="section-result">
+    <div class="section-head-row">
+      <div>
+        <div class="step-tag">Hasil Analisis</div>
+        <h2>Dashboard Prediksi</h2>
+      </div>
+      <button class="btn btn-primary" onclick="downloadResults()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        Download CSV
+      </button>
+    </div>
+
+    <div class="kpi-grid" id="resultKpi"></div>
+
+    <div class="charts-row">
+      <div class="glass card chart-card-sm">
+        <div class="chart-title-row">
+          <h3>Distribusi Risiko</h3>
+          <span class="chart-sub">Berdasarkan probabilitas</span>
+        </div>
+        <div class="donut-wrap">
+          <canvas id="riskDonut"></canvas>
+          <div class="donut-center" id="donutCenter"></div>
+        </div>
+      </div>
+      <div class="glass card chart-card-lg">
+        <div class="chart-title-row">
+          <h3>Top 10 Pelanggan Risiko Tertinggi</h3>
+          <span class="chart-sub">Probabilitas telat (%)</span>
+        </div>
+        <canvas id="topRiskBar"></canvas>
+      </div>
+    </div>
+
+    <div class="glass card">
+      <div class="table-top-row">
+        <div>
+          <h3>Pelanggan Risiko Tinggi</h3>
+          <p class="table-desc">Probabilitas keterlambatan ≥ 60%</p>
+        </div>
+        <div class="table-filters">
+          <div class="search-wrap">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Cari nama / ID…" oninput="filterTable(this.value)" />
+          </div>
+        </div>
+      </div>
+      <div class="table-scroll" id="resultTable"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="toast-container"></div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
