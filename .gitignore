@@ -1,0 +1,26 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code
+.vscode/
+
+# Model files (auto-generated)
+models/*.pkl
+
+# Results (auto-generated)
+results/*.csv
+
+# Data (opsional, hapus baris ini kalau mau upload data)
+# data/
+
+# OS
+.DS_Store
+Thumbs.db
